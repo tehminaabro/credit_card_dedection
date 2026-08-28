@@ -1,5 +1,6 @@
 """
-Aegis Fraud Detection API
+SecureTrans
+credit card fraud detection
 --------------------------
 Loads the trained imblearn Pipeline (StandardScaler -> SMOTE -> LogisticRegression)
 and threshold.json, and serves:
