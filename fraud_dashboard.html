@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureTrans — Fraud Detection System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:            #0A0E16;
+    --panel:         #10161F;
+    --panel-raised:  #141B26;
+    --border:        #1E2733;
+    --text-primary:  #E7EBF2;
+    --text-secondary:#7C8798;
+    --text-dim:      #4E586A;
+    --safe:          #2AD9A8;
+    --safe-dim:      rgba(42,217,168,0.12);
+    --fraud:         #F04B5F;
+    --fraud-dim:     rgba(240,75,95,0.14);
+    --warn:          #F0A93E;
+    --line:          #4C86FF;
+    --radius:        10px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ height:100%; }
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(76,134,255,0.06), transparent 45%),
+      radial-gradient(circle at 85% 100%, rgba(240,75,95,0.05), transparent 45%),
+      var(--bg);
+    color:var(--text-primary);
+    font-family:'Inter', sans-serif;
+    min-height:100%;
+    padding:28px clamp(16px,3vw,40px) 60px;
+  }
+  ::selection{ background:var(--line); color:#fff; }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:26px; flex-wrap:wrap; gap:14px;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .mark{
+    width:36px; height:36px; flex-shrink:0;
+  }
+  .brand-text h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:20px; font-weight:600; letter-spacing:0.2px;
+  }
+  .brand-text p{
+    font-size:12px; color:var(--text-secondary); margin-top:1px;
+    font-family:'IBM Plex Mono', monospace; letter-spacing:0.3px;
+  }
+  .status{
+    display:flex; align-items:center; gap:18px;
+    font-family:'IBM Plex Mono', monospace; font-size:12px;
+    color:var(--text-secondary);
+  }
+  .live-pill{
+    display:flex; align-items:center; gap:8px;
+    background:var(--panel); border:1px solid var(--border);
+    padding:7px 14px; border-radius:100px;
+  }
+  .dot{
+    width:8px; height:8px; border-radius:50%; background:var(--safe);
+    box-shadow:0 0 0 0 rgba(42,217,168,0.6);
+    animation:pulse 1.8s infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(42,217,168,0.55); }
+    70%{ box-shadow:0 0 0 7px rgba(42,217,168,0); }
+    100%{ box-shadow:0 0 0 0 rgba(42,217,168,0); }
+  }
+  .live-pill span{ color:var(--safe); font-weight:600; letter-spacing:0.5px; }
+
+  /* ---------- KPI Row ---------- */
+  .kpis{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:14px;
+    margin-bottom:18px;
+  }
+  .kpi{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px 18px;
+    position:relative; overflow:hidden;
+  }
+  .kpi::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--accent-color,var(--line));
+  }
+  .kpi .label{
+    font-size:11px; color:var(--text-secondary); text-transform:uppercase;
+    letter-spacing:0.8px; font-weight:500;
+  }
+  .kpi .value{
+    font-family:'Space Grotesk', sans-serif; font-size:26px; font-weight:600;
+    margin-top:8px;
+  }
+  .kpi .sub{
+    font-size:11px; color:var(--text-dim); margin-top:4px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  /* ---------- Main grid ---------- */
+  .grid{
+    display:grid; grid-template-columns:1.65fr 1fr; gap:16px;
+  }
+  .col{ display:flex; flex-direction:column; gap:16px; min-width:0; }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px 20px;
+  }
+  .panel-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .panel-head h2{
+    font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:600;
+  }
+  .panel-head .hint{
+    font-size:11px; color:var(--text-dim); font-family:'IBM Plex Mono', monospace;
+  }
+
+  /* Pulse chart */
+  .pulse-panel canvas{ max-height:200px; }
+
+  /* Feed table */
+  .feed-panel{ flex:1; display:flex; flex-direction:column; }
+  table{ width:100%; border-collapse:collapse; }
+  thead th{
+    text-align:left; font-size:10.5px; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:0.6px; font-weight:500;
+    padding:0 8px 10px; border-bottom:1px solid var(--border);
+  }
+  tbody td{
+    padding:10px 8px; font-size:12.5px; border-bottom:1px solid rgba(255,255,255,0.03);
+  }
+  tbody tr{ animation:rowIn 0.35s ease; }
+  @keyframes rowIn{
+    from{ opacity:0; transform:translateY(-6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; color:var(--text-secondary); }
+  .amt{ font-family:'IBM Plex Mono', monospace; font-weight:500; }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11px; font-weight:600; padding:3px 9px; border-radius:100px;
+    font-family:'IBM Plex Mono', monospace;
+  }
+  .badge.safe{ background:var(--safe-dim); color:var(--safe); }
+  .badge.fraud{ background:var(--fraud-dim); color:var(--fraud); }
+
+  .risk-bar{
+    width:70px; height:5px; border-radius:3px; background:var(--panel-raised);
+    overflow:hidden;
+  }
+  .risk-bar i{ display:block; height:100%; border-radius:3px; }
+
+  /* Donut panel */
+  .donut-wrap{ position:relative; display:flex; justify-content:center; }
+  .donut-wrap canvas{ max-height:190px; }
+  .donut-center{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    text-align:center; pointer-events:none;
+  }
+  .donut-center .pct{ font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:700; }
+  .donut-center .lbl{ font-size:10px; color:var(--text-secondary); letter-spacing:0.5px; }
+  .legend{ display:flex; justify-content:center; gap:18px; margin-top:12px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); }
+  .legend-dot{ width:8px; height:8px; border-radius:50%; }
+
+  /* Alerts panel */
+  .alerts-panel{ flex:1; display:flex; flex-direction:column; }
+  .alerts-list{ display:flex; flex-direction:column; gap:8px; overflow:hidden; }
+  .alert-item{
+    background:var(--panel-raised); border-left:3px solid var(--fraud);
+    border-radius:6px; padding:10px 12px;
+    display:flex; justify-content:space-between; align-items:center;
+    animation:rowIn 0.35s ease;
+  }
+  .alert-item .a-left .id{ font-family:'IBM Plex Mono', monospace; font-size:12px; }
+  .alert-item .a-left .time{ font-size:10.5px; color:var(--text-dim); margin-top:2px; }
+  .alert-item .a-right{ text-align:right; }
+  .alert-item .amt{ font-size:13px; color:var(--fraud); }
+  .alert-item .risk{ font-size:10px; color:var(--text-secondary); margin-top:2px; }
+  .empty-alerts{
+    color:var(--text-dim); font-size:12px; text-align:center; padding:30px 0;
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  @media (max-width:1100px){
+    .kpis{ grid-template-columns:repeat(3,1fr); }
+  }
+  @media (max-width:900px){
+    .kpis{ grid-template-columns:repeat(2,1fr); }
+    .grid{ grid-template-columns:1fr; }
+  }
+
+  a:focus-visible, button:focus-visible{ outline:2px solid var(--line); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div id="js-error-banner" style="display:none; background:#F04B5F; color:#fff; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-family:'IBM Plex Mono', monospace; font-size:12px;"></div>
+<script>
+window.addEventListener('error', function(e){
+  const banner = document.getElementById('js-error-banner');
+  if (banner){
+    banner.style.display = 'block';
+    banner.textContent = '⚠ Script error: ' + e.message + ' — open DevTools (F12) → Console for details.';
+  }
+});
+
+// Try more than one CDN for Chart.js — some networks/firewalls block one but not the other.
+function loadScript(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+const CHART_SOURCES = [
+  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js',
+  'https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js',
+  'https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js'
+];
+
+async function loadChartLibrary(){
+  for (const src of CHART_SOURCES){
+    try {
+      await loadScript(src);
+      if (window.Chart) return true;
+    } catch (e) { /* try next source */ }
+  }
+  return false;
+}
+
+loadChartLibrary().then(ok => {
+  const banner = document.getElementById('js-error-banner');
+  if (!ok){
+    banner.style.display = 'block';
+    banner.textContent = '⚠ Could not load the charting library from any source — check your internet connection or network/firewall settings, then reload this page.';
+    return;
+  }
+  if (typeof initDashboard === 'function') initDashboard();
+});
+</script>
+
+<header>
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 36 36" fill="none">
+      <path d="M18 2L32 8V17C32 25.5 26.5 32.3 18 34.5C9.5 32.3 4 25.5 4 17V8L18 2Z" fill="#141B26" stroke="#2AD9A8" stroke-width="1.5"/>
+      <path d="M12 18L16 22L24 13" stroke="#2AD9A8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="brand-text">
+      <h1>SecureTrans</h1>
+      <p>CREDIT CARD FRAUD DETECTION SYSTEM</p>
+    </div>
+  </div>
+  <div class="status">
+    <div class="live-pill"><span class="dot"></span><span>LIVE</span></div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<section class="kpis">
+  <div class="kpi" style="--accent-color:var(--line)">
+    <div class="label">Transactions Screened</div>
+    <div class="value" id="kpi-total">0</div>
+    <div class="sub">since session start</div>
+  </div>
+  <div class="kpi" style="--accent-color:var(--fraud)">
+    <div class="label">Flagged as Fraud</div>
+    <div class="value" id="kpi-fraud">0</div>
+    <div class="sub" id="kpi-fraud-sub">0 in last 5 min</div>
+  </div>
+  <div class="kpi" style="--accent-color:var(--warn)">
+    <div class="label">Fraud Rate</div>
+    <div class="value" id="kpi-rate">0.00%</div>
+    <div class="sub">of screened volume</div>
+  </div>
+  <div class="kpi" style="--accent-color:var(--safe)">
+    <div class="label">Amount Screened</div>
+    <div class="value" id="kpi-amount">$0</div>
+    <div class="sub">cumulative, this session</div>
+  </div>
+  <div class="kpi" style="--accent-color:#8B7BFF" id="kpi-accuracy-card">
+    <div class="label">Live Accuracy</div>
+    <div class="value" id="kpi-accuracy">—</div>
+    <div class="sub" id="kpi-accuracy-sub">vs. ground truth (Class)</div>
+  </div>
+</section>
+
+<div class="grid">
+  <div class="col">
+    <div class="panel pulse-panel">
+      <div class="panel-head">
+        <h2>Transaction Pulse</h2>
+        <span class="hint">amount per transaction · last 30</span>
+      </div>
+      <canvas id="pulseChart"></canvas>
+    </div>
+
+    <div class="panel feed-panel">
+      <div class="panel-head">
+        <h2>Live Feed</h2>
+        <span class="hint">most recent first</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Txn ID</th><th>Amount</th><th>Risk Score</th><th>Status</th></tr>
+        </thead>
+        <tbody id="feed-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Fraud vs Normal</h2>
+        <span class="hint">session share</span>
+      </div>
+      <div class="donut-wrap">
+        <canvas id="donutChart"></canvas>
+        <div class="donut-center">
+          <div class="pct" id="donut-pct">0%</div>
+          <div class="lbl">FRAUD</div>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--safe)"></span>Normal</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--fraud)"></span>Fraud</div>
+      </div>
+    </div>
+
+    <div class="panel alerts-panel">
+      <div class="panel-head">
+        <h2>Fraud Alerts</h2>
+        <span class="hint">last 6</span>
+      </div>
+      <div class="alerts-list" id="alerts-list">
+        <div class="empty-alerts">No fraud detected yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DEMO DATA SOURCE
+   This block simulates the live WebSocket feed from your
+   FastAPI backend. Replace `simulateTransaction()` calls with a
+   real `ws.onmessage` handler that receives {id, time, amount,
+   risk, isFraud} from your model, and call `handleTransaction()`
+   with that payload instead.
+   ============================================================ */
+
+function initDashboard(){
+
+let totalCount = 0, fraudCount = 0, totalAmount = 0;
+let correctCount = 0, labeledCount = 0;
+let fraudLast5Min = [];
+const pulseWindow = [];
+const MAX_PULSE = 30;
+const MAX_FEED_ROWS = 12;
+
+function fmtMoney(n){
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtTime(d){
+  return d.toLocaleTimeString('en-US', {hour12:false});
+}
+function txnId(){
+  return 'TX-' + Math.random().toString(36).slice(2,8).toUpperCase();
+}
+
+// ----- Chart.js setup -----
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.color = '#7C8798';
+
+const pulseCtx = document.getElementById('pulseChart').getContext('2d');
+const pulseChart = new Chart(pulseCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      data: [],
+      borderColor: '#4C86FF',
+      borderWidth: 2,
+      pointRadius: [],
+      pointBackgroundColor: [],
+      pointBorderColor: [],
+      tension: 0.35,
+      fill: true,
+      backgroundColor: 'rgba(76,134,255,0.06)'
+    }]
+  },
+  options: {
+    responsive: true,
+    animation: { duration: 300 },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { display: false },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: v => '$'+v } }
+    }
+  }
+});
+
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+const donutChart = new Chart(donutCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Normal', 'Fraud'],
+    datasets: [{
+      data: [1, 0],
+      backgroundColor: ['#2AD9A8', '#F04B5F'],
+      borderColor: '#10161F',
+      borderWidth: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '72%',
+    plugins: { legend: { display: false } }
+  }
+});
+
+function updateClock(){
+  document.getElementById('clock').textContent = fmtTime(new Date());
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+function handleTransaction(t){
+  totalCount++;
+  totalAmount += t.amount;
+  if (t.isFraud){
+    fraudCount++;
+    fraudLast5Min.push(Date.now());
+  }
+  fraudLast5Min = fraudLast5Min.filter(ts => Date.now() - ts < 5*60*1000);
+
+  // KPIs
+  document.getElementById('kpi-total').textContent = totalCount.toLocaleString();
+  document.getElementById('kpi-fraud').textContent = fraudCount.toLocaleString();
+  document.getElementById('kpi-fraud-sub').textContent = fraudLast5Min.length + ' in last 5 min';
+  document.getElementById('kpi-rate').textContent = ((fraudCount/totalCount)*100).toFixed(2) + '%';
+  document.getElementById('kpi-amount').textContent = fmtMoney(totalAmount);
+
+  // Live accuracy — only meaningful once ground-truth "actual" labels start arriving
+  if (t.actual === 0 || t.actual === 1){
+    labeledCount++;
+    if ((t.actual === 1) === t.isFraud) correctCount++;
+    document.getElementById('kpi-accuracy').textContent = ((correctCount/labeledCount)*100).toFixed(1) + '%';
+    document.getElementById('kpi-accuracy-sub').textContent = correctCount + ' / ' + labeledCount + ' matched';
+  }
+
+  // Pulse chart
+  pulseWindow.push(t);
+  if (pulseWindow.length > MAX_PULSE) pulseWindow.shift();
+  pulseChart.data.labels = pulseWindow.map(x => fmtTime(x.time));
+  pulseChart.data.datasets[0].data = pulseWindow.map(x => x.amount);
+  pulseChart.data.datasets[0].pointRadius = pulseWindow.map(x => x.isFraud ? 6 : 0);
+  pulseChart.data.datasets[0].pointBackgroundColor = pulseWindow.map(x => x.isFraud ? '#F04B5F' : '#4C86FF');
+  pulseChart.data.datasets[0].pointBorderColor = pulseWindow.map(x => x.isFraud ? '#F04B5F' : '#4C86FF');
+  pulseChart.update('none');
+
+  // Donut
+  donutChart.data.datasets[0].data = [totalCount - fraudCount, fraudCount];
+  donutChart.update('none');
+  document.getElementById('donut-pct').textContent = ((fraudCount/totalCount)*100).toFixed(1) + '%';
+
+  // Feed table
+  const tbody = document.getElementById('feed-body');
+  const tr = document.createElement('tr');
+  const riskPct = Math.round(t.risk * 100);
+  const riskColor = t.risk > 0.7 ? 'var(--fraud)' : t.risk > 0.4 ? 'var(--warn)' : 'var(--safe)';
+  const hasLabel = (t.actual === 0 || t.actual === 1);
+  const mismatch = hasLabel && ((t.actual === 1) !== t.isFraud);
+  tr.innerHTML = `
+    <td class="mono">${fmtTime(t.time)}</td>
+    <td class="mono">${t.id}</td>
+    <td class="amt">${fmtMoney(t.amount)}</td>
+    <td>
+      <div class="risk-bar"><i style="width:${riskPct}%; background:${riskColor}"></i></div>
+    </td>
+    <td>
+      <span class="badge ${t.isFraud ? 'fraud' : 'safe'}">${t.isFraud ? 'FRAUD' : 'NORMAL'}</span>
+      ${mismatch ? '<span class="mono" style="color:var(--warn); font-size:10px; margin-left:6px;" title="Model disagreed with ground truth">⚠ mismatch</span>' : ''}
+    </td>`;
+  tbody.prepend(tr);
+  while (tbody.children.length > MAX_FEED_ROWS) tbody.removeChild(tbody.lastChild);
+
+  // Alerts
+  if (t.isFraud){
+    const list = document.getElementById('alerts-list');
+    const empty = list.querySelector('.empty-alerts');
+    if (empty) empty.remove();
+    const item = document.createElement('div');
+    item.className = 'alert-item';
+    item.innerHTML = `
+      <div class="a-left">
+        <div class="id">${t.id}</div>
+        <div class="time">${fmtTime(t.time)}</div>
+      </div>
+      <div class="a-right">
+        <div class="amt">${fmtMoney(t.amount)}</div>
+        <div class="risk">${riskPct}% risk</div>
+      </div>`;
+    list.prepend(item);
+    while (list.children.length > 6) list.removeChild(list.lastChild);
+  }
+}
+
+// ----- Demo transaction generator (swap for real WebSocket later) -----
+function simulateTransaction(){
+  const isFraud = Math.random() < 0.07; // ~7% simulated fraud rate
+  const amount = isFraud
+    ? +(Math.random()*1800 + 200).toFixed(2)
+    : +(Math.random()*220 + 5).toFixed(2);
+  const risk = isFraud
+    ? +(Math.random()*0.25 + 0.72).toFixed(2)
+    : +(Math.random()*0.55).toFixed(2);
+  // demo-only: simulate ground truth with ~95% agreement, just so the
+  // "Live Accuracy" KPI has something to show before your real backend connects
+  const actual = Math.random() < 0.95 ? (isFraud ? 1 : 0) : (isFraud ? 0 : 1);
+
+  handleTransaction({
+    id: txnId(),
+    time: new Date(),
+    amount,
+    risk,
+    isFraud,
+    actual
+  });
+}
+
+let demoInterval = setInterval(simulateTransaction, 1400);
+simulateTransaction();
+
+// ===== CONFIG =====
+// Points to the live backend deployed on Render.
+const BACKEND_WS_URL = 'wss://credit-card-dedection-1.onrender.com/ws';
+
+// ----- Connect to the real FastAPI backend, when available -----
+function connectToBackend(){
+  try {
+    const socket = new WebSocket(BACKEND_WS_URL);
+
+    socket.onopen = () => {
+      clearInterval(demoInterval);
+      document.querySelector('.live-pill span:last-child').textContent = 'LIVE · MODEL';
+    };
+
+    socket.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      handleTransaction({
+        id: msg.id,
+        time: new Date(msg.time * 1000),
+        amount: msg.amount,
+        risk: msg.risk,
+        isFraud: msg.isFraud,
+        actual: msg.actual
+      });
+    };
+
+    socket.onclose = () => {
+      // backend not running yet / connection dropped -> try again shortly
+      document.querySelector('.live-pill span:last-child').textContent = 'LIVE · DEMO';
+      setTimeout(connectToBackend, 3000);
+    };
+
+    socket.onerror = () => { socket.close(); };
+  } catch (e) {
+    setTimeout(connectToBackend, 3000);
+  }
+}
+
+connectToBackend();
+
+} // end initDashboard()
+</script>
+</body>
+</html>
