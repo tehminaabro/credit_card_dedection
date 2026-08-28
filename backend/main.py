@@ -1,5 +1,5 @@
 """
-SecureTrans Fraud Detection API
+Aegis Fraud Detection API
 --------------------------
 Loads the trained imblearn Pipeline (StandardScaler -> SMOTE -> LogisticRegression)
 and threshold.json, and serves:
@@ -114,6 +114,16 @@ def predict(transaction: Transaction):
     return result
 
 
+@app.get("/sample_transaction")
+def sample_transaction(fraud: bool = False):
+    """Returns one real transaction's features from the sample dataset —
+    used by the dashboard's manual 'Test a known case' buttons."""
+    df = pd.read_csv(DATA_PATH)
+    subset = df[df["Class"] == (1 if fraud else 0)]
+    row = subset.sample(n=1).iloc[0]
+    return row[FEATURE_ORDER].to_dict()
+
+
 @app.get("/history")
 def get_history(limit: int = 50):
     """Returns the most recent logged transactions from SQLite."""
@@ -136,28 +146,35 @@ async def websocket_endpoint(websocket: WebSocket):
         idx = 0
         n = len(df)
         while True:
-            row = df.iloc[idx % n]
-            payload = row[FEATURE_ORDER].to_dict()
-            result = predict_transaction(payload)
+            try:
+                row = df.iloc[idx % n]
+                payload = row[FEATURE_ORDER].to_dict()
+                result = predict_transaction(payload)
 
-            # "Class" is the ground-truth label in the Kaggle dataset (0 = normal, 1 = fraud).
-            # It's never sent to the model — only used here so the dashboard can show
-            # live accuracy (prediction vs. actual).
-            actual_label = int(row["Class"]) if "Class" in df.columns else None
+                # "Class" is the ground-truth label in the Kaggle dataset (0 = normal, 1 = fraud).
+                # It's never sent to the model — only used here so the dashboard can show
+                # live accuracy (prediction vs. actual).
+                actual_label = int(row["Class"]) if "Class" in df.columns else None
 
-            log_transaction(
-                txn_id=f"TX-{idx:06d}", ts=time.time(), amount=float(row["Amount"]),
-                risk=result["risk"], is_fraud=result["isFraud"], actual=actual_label
-            )
+                log_transaction(
+                    txn_id=f"TX-{idx:06d}", ts=time.time(), amount=float(row["Amount"]),
+                    risk=result["risk"], is_fraud=result["isFraud"], actual=actual_label
+                )
 
-            await websocket.send_json({
-                "id": f"TX-{idx:06d}",
-                "time": time.time(),
-                "amount": float(row["Amount"]),
-                "risk": result["risk"],
-                "isFraud": result["isFraud"],
-                "actual": actual_label,
-            })
+                await websocket.send_json({
+                    "id": f"TX-{idx:06d}",
+                    "time": time.time(),
+                    "amount": float(row["Amount"]),
+                    "risk": result["risk"],
+                    "isFraud": result["isFraud"],
+                    "actual": actual_label,
+                })
+            except WebSocketDisconnect:
+                raise
+            except Exception as e:
+                # Log and skip this row instead of killing the whole stream.
+                print(f"[ws] skipped row {idx}: {e}")
+
             idx += 1
             await asyncio.sleep(1.4)  # pacing so it feels like a live feed
     except WebSocketDisconnect:
