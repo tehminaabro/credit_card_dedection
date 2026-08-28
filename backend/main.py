@@ -1,6 +1,6 @@
 """
 SecureTrans
-credit card fraud detection
+credit card fraud detection API
 --------------------------
 Loads the trained imblearn Pipeline (StandardScaler -> SMOTE -> LogisticRegression)
 and threshold.json, and serves:
