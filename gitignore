@@ -1,0 +1,16 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Large / raw data — keep only creditcard_sample.csv in the repo
+creditcard.csv
+fraud_detection_baseline.pkl
+
+# Local database (regenerates automatically when the app runs)
+backend/fraud_history.db
+
+# OS / editor junk
+.DS_Store
+.vscode/
