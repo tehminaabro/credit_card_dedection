@@ -7,7 +7,8 @@ a trained fraud-detection model is served through a real backend API and
 displayed on a live monitoring dashboard, the way a real fintech fraud
 system would work.
 
-🔗 **Live Demo:** _[Add your Render deployment link here once deployed]_
+🔗 **Live Demo:** _[https://securetrans-fraud-detection-system.onrender.com
+                    https://credit-card-dedection.onrender.com]_
 
 ---
 
