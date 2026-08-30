@@ -576,6 +576,9 @@ simulateTransaction();
 // Points to the live backend deployed on Render.
 const BACKEND_WS_URL = 'wss://credit-card-dedection.onrender.com/ws';
 const BACKEND_HTTP_URL = BACKEND_WS_URL.replace('wss://', 'https://').replace('ws://', 'http://').replace(/\/ws$/, '');
+const THRESHOLD = 0.99;
+
+  
 
 // ----- Manual "Test a known case" buttons — work independently of the charts -----
 async function testManualCase(isFraudCase){
