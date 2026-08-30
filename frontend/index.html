@@ -323,6 +323,11 @@ loadChartLibrary().then(ok => {
       Predict
     </button>
   </div>
+  
+     <div id="custom-result"
+  style="display:none; margin-top:12px; padding:14px 16px; background:var(--panel-raised); border-radius:8px; font-family:'IBM Plex Mono',monospace; font-size:13px; line-height:1.9;">
+</div>
+   
 </div>
 <div class="grid">
   <div class="col">
@@ -617,7 +622,7 @@ async function testManualCase(isFraudCase){
 document.getElementById('btn-test-fraud').addEventListener('click', () => testManualCase(true));
 document.getElementById('btn-test-normal').addEventListener('click', () => testManualCase(false));
 async function testCustomCase(){
-  const resDiv = document.getElementById('manual-result');
+  const resDiv = document.getElementById('custom-result');
   const timeVal = document.getElementById('custom-time').value;
   const amountVal = document.getElementById('custom-amount').value;
 
