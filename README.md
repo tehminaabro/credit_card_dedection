@@ -59,6 +59,51 @@ threshold was **tuned using a precision-recall analysis** on a held-out
 validation set, selecting the value that maximizes the F1-score (balancing
 missed fraud against false alarms). This is stored in `threshold.json` and
 loaded dynamically by the backend — see `backend/main.py`.
+## Model Evaluation
+
+The model was evaluated on a held-out test set using the tuned decision
+threshold (see `threshold.json`), rather than the default 0.5 cutoff.
+
+**Confusion Matrix**
+
+|                  | Predicted Normal | Predicted Fraud |
+|------------------|------------------|------------------|
+| **Actual Normal** | 56,603 (TN)      | 48 (FP)          |
+| **Actual Fraud**  | 20 (FN)          | 75 (TP)          |
+
+**Classification Report**
+
+| Class          | Precision | Recall | F1-score | Support |
+|----------------|-----------|--------|----------|---------|
+| 0 (Normal)     | 1.00      | 1.00   | 1.00     | 56,651  |
+| 1 (Fraud)      | 0.61      | 0.79   | 0.69     | 95      |
+| **Accuracy**   |           |        | 1.00     | 56,746  |
+| **Macro avg**  | 0.80      | 0.89   | 0.84     | 56,746  |
+| **Weighted avg**| 1.00     | 1.00   | 1.00     | 56,746  |
+
+**Why accuracy is misleading here:** fraud makes up only ~0.17% of the
+dataset. A model that predicted "normal" for every transaction would still
+score ~99.8% accuracy while catching zero fraud. For this reason, model
+performance is judged on **precision, recall, and F1 for the fraud class**,
+not overall accuracy.
+
+**Interpreting the results:**
+- **Recall = 0.79** — the model correctly identifies 75 of the 95 actual
+  fraud cases in the test set, missing 20.
+- **Precision = 0.61** — of all transactions the model flags as fraud
+  (123 total), 61% are genuinely fraudulent; the remaining 48 are false
+  alarms on legitimate transactions.
+- **F1 = 0.69** — the harmonic mean of the two, used here as the metric
+  the decision threshold was tuned to maximize.
+
+**The precision/recall trade-off:** in fraud detection, missing a fraud
+case (false negative) is usually far more costly than a false alarm
+(false positive) — a blocked legitimate transaction is an inconvenience,
+but an undetected fraud is a direct financial loss. The threshold in this
+project was tuned to lean toward catching more fraud, which is why recall
+(0.79) is notably higher than precision (0.61). A different business
+context (e.g. one where false alarms damage customer trust more) could
+justify moving the threshold the other way.
 
 ## 4. Tech stack & architecture
 
