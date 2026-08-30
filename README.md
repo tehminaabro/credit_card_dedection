@@ -24,18 +24,47 @@ learning model and wraps it in a real, working system:
 4. Every scored transaction is logged to a database for later review
 
 ---
-
 ## 2. Dataset
 
 [Credit Card Fraud Detection dataset (Kaggle / ULB - Machine Learning Group)](https://www.kaggle.com/mlg-ulb/creditcardfraud)
 
-- 284,807 transactions made by European cardholders, of which only 492
-  (~0.17%) are fraudulent — a highly **imbalanced** classification problem.
-- Features `V1`–`V28` are the result of a **PCA transformation** applied by
-  the dataset creators for confidentiality — the original transaction
-  details (merchant, location, etc.) are not disclosed. `Time` and `Amount`
-  are the only untransformed features.
-- `Class` is the target label (0 = normal, 1 = fraud).
+- 284,807 transactions made by European cardholders over two days in
+  September 2013, of which only 492 (~0.17%) are fraudulent — a highly
+  **imbalanced** classification problem.
+- Real transaction details (merchant name, card number, location, etc.)
+  are never included in this dataset — they were removed and replaced
+  with anonymized numerical features for confidentiality.
+
+### Features
+
+| Feature      | Type                | Description                                                                 |
+|--------------|---------------------|-------------------------------------------------------------------------------|
+| `Time`       | Numeric (seconds)   | Seconds elapsed between this transaction and the very first transaction in the dataset. Ranges from 0 to ~172,800 (48 hours). Not a clock time. |
+| `V1` – `V28` | Numeric (anonymized)| Principal components obtained via **PCA (Principal Component Analysis)** applied to the original transaction features. Because of confidentiality, the real meaning of each (e.g. merchant category, location, device) is not disclosed — these are simply the mathematically transformed values. They have no human-readable unit or interpretation. |
+| `Amount`     | Numeric (currency)  | The transaction amount.                                                     |
+| `Class`      | Binary (0/1)        | The target label — `0` = normal transaction, `1` = fraud. Used only for training and for measuring accuracy; never given to the model as an input feature. |
+
+### How the features are used
+
+- **During training:** all 30 input features (`Time`, `V1`–`V28`, `Amount`)
+  are fed into the model, with `Class` used only as the label the model
+  is trying to predict.
+- **During live prediction:** the same 30 features are required in the
+  exact order the model was trained on (`Time`, `V1`...`V28`, `Amount` —
+  see `FEATURE_ORDER` in `backend/main.py`). `Class` is never sent to the
+  model at prediction time; it's only used afterward, if available, to
+  check whether the model's prediction matched the real outcome (used
+  for the dashboard's "Live Accuracy" KPI).
+- **Because `V1`–`V28` are anonymized PCA components with no real-world
+  meaning**, they can't be meaningfully typed in by hand. The dashboard's
+  manual testing tools reflect this:
+  - *"Test a known FRAUD/NORMAL case"* pulls a complete, real row from the
+    dataset (all 30 features) and runs it through the model.
+  - The *custom Time/Amount* tester lets a user supply their own `Time`
+    and `Amount` — the two human-interpretable features — while borrowing
+    `V1`–`V28` from a real sample transaction, since those can't be
+    entered manually.
+    
 
 ## 3. Methodology / Logic used
 
