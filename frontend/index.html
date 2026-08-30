@@ -651,18 +651,30 @@ async function testCustomCase(){
     const amount = '$' + Number(features.Amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     resDiv.style.color = 'var(--text-primary)';
     resDiv.innerHTML = `
-      Your Time: <b>${features.Time}</b> &nbsp;|&nbsp; Your Amount: <b>${amount}</b><br>
-      <span style="color:var(--text-dim); font-size:11px;">(V1–V28 borrowed from a real transaction — those are anonymized values with no human-readable meaning)</span><br>
-      Model's risk score: <b>${(result.risk * 100).toFixed(2)}%</b><br>
-      Model's prediction: <span class="badge ${result.isFraud ? 'fraud' : 'safe'}">${result.isFraud ? 'FRAUD' : 'NORMAL'}</span>
-    `;
-  } catch (e) {
-    resDiv.style.color = 'var(--fraud)';
-    resDiv.textContent = '⚠ Could not reach the backend. Wait a moment and try again.';
-  }
-}
+   Your Time: <b>${features.Time}</b> &nbsp;|&nbsp; Your Amount: <b>${amount}</b><br>
 
-document.getElementById('btn-test-custom').addEventListener('click', testCustomCase);
+  <span style="color:var(--text-dim); font-size:11px;">
+    (V1–V28 borrowed from a real transaction — these are anonymized values with no human-readable meaning)
+  </span><br>
+
+  Model's risk score: <b>${(result.risk * 100).toFixed(2)}%</b><br>
+
+  Fraud threshold: <b>${(THRESHOLD * 100).toFixed(2)}%</b><br>
+
+  Model's prediction:
+  <span class="badge ${result.isFraud ? 'fraud' : 'safe'}">
+    ${result.isFraud ? 'FRAUD' : 'NORMAL'}
+  </span><br>
+
+  <span style="color:var(--text-secondary); font-size:11px;">
+    ${
+      result.isFraud
+        ? 'The risk score is at or above the fraud threshold.'
+        : 'The risk score is below the fraud threshold.'
+    }
+  </span>
+`;
+ 
 // ----- Connect to the real FastAPI backend, when available -----
 function connectToBackend(){
   try {
