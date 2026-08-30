@@ -631,50 +631,67 @@ async function testCustomCase(){
   resDiv.style.display = 'block';
   resDiv.style.color = 'var(--text-secondary)';
   resDiv.textContent = 'Running your custom transaction through the model…';
+ try {
+  const sampleRes = await fetch(`${BACKEND_HTTP_URL}/sample_transaction?fraud=false`);
+  if (!sampleRes.ok) throw new Error('sample fetch failed');
 
-  try {
-    const sampleRes = await fetch(`${BACKEND_HTTP_URL}/sample_transaction?fraud=false`);
-    if (!sampleRes.ok) throw new Error('sample fetch failed');
-    const features = await sampleRes.json();
+  const features = await sampleRes.json();
 
-    features.Amount = Number(amountVal);
-    if (timeVal !== '') features.Time = Number(timeVal);
+  features.Amount = Number(amountVal);
 
-    const predRes = await fetch(`${BACKEND_HTTP_URL}/predict`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(features)
-    });
-    if (!predRes.ok) throw new Error('predict failed');
-    const result = await predRes.json();
+  if (timeVal !== '') {
+    features.Time = Number(timeVal);
+  }
 
-    const amount = '$' + Number(features.Amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    resDiv.style.color = 'var(--text-primary)';
-    resDiv.innerHTML = `
-   Your Time: <b>${features.Time}</b> &nbsp;|&nbsp; Your Amount: <b>${amount}</b><br>
+  const predRes = await fetch(`${BACKEND_HTTP_URL}/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(features)
+  });
 
-  <span style="color:var(--text-dim); font-size:11px;">
-    (V1–V28 borrowed from a real transaction — these are anonymized values with no human-readable meaning)
-  </span><br>
+  if (!predRes.ok) throw new Error('predict failed');
 
-  Model's risk score: <b>${(result.risk * 100).toFixed(2)}%</b><br>
+  const result = await predRes.json();
 
-  Fraud threshold: <b>${(THRESHOLD * 100).toFixed(2)}%</b><br>
+  const amount = '$' + Number(features.Amount).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 
-  Model's prediction:
-  <span class="badge ${result.isFraud ? 'fraud' : 'safe'}">
-    ${result.isFraud ? 'FRAUD' : 'NORMAL'}
-  </span><br>
+  resDiv.style.color = 'var(--text-primary)';
 
-  <span style="color:var(--text-secondary); font-size:11px;">
-    ${
-      result.isFraud
-        ? 'The risk score is at or above the fraud threshold.'
-        : 'The risk score is below the fraud threshold.'
-    }
-  </span>
-`;
- 
+  resDiv.innerHTML = `
+    Your Time: <b>${features.Time}</b> &nbsp;|&nbsp; Your Amount: <b>${amount}</b><br>
+
+    <span style="color:var(--text-dim); font-size:11px;">
+      (V1–V28 borrowed from a real transaction — these are anonymized values with no human-readable meaning)
+    </span><br>
+
+    Model's risk score: <b>${(result.risk * 100).toFixed(2)}%</b><br>
+
+    Fraud threshold: <b>99.00%</b><br>
+
+    Model's prediction:
+    <span class="badge ${result.isFraud ? 'fraud' : 'safe'}">
+      ${result.isFraud ? 'FRAUD' : 'NORMAL'}
+    </span><br>
+
+    <span style="color:var(--text-secondary); font-size:11px;">
+      ${
+        result.isFraud
+          ? 'The risk score is at or above the fraud threshold.'
+          : 'The risk score is below the fraud threshold.'
+      }
+    </span>
+  `;
+
+} catch (e) {
+  resDiv.style.color = 'var(--fraud)';
+  resDiv.textContent = '⚠ Could not reach the backend. Wait a moment and try again.';
+}
+
+
+  
 // ----- Connect to the real FastAPI backend, when available -----
 function connectToBackend(){
   try {
