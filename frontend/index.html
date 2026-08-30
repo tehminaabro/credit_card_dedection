@@ -586,7 +586,7 @@ const THRESHOLD = 0.99;
 
 // ----- Manual "Test a known case" buttons — work independently of the charts -----
 async function testManualCase(isFraudCase){
-  const resDiv = document.getElementById('manual-result');
+  const resDiv = document.getElementById('custom-result');
   resDiv.style.display = 'block';
   resDiv.style.color = 'var(--text-secondary)';
   resDiv.textContent = 'Fetching a real transaction and running it through the model…';
