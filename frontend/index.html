@@ -309,7 +309,21 @@ loadChartLibrary().then(ok => {
   </div>
   <div id="manual-result" style="display:none; margin-top:16px; padding:14px 16px; background:var(--panel-raised); border-radius:8px; font-family:'IBM Plex Mono',monospace; font-size:13px; line-height:1.9;"></div>
 </div>
-
+<div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+  <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+    Or test with your own Time & Amount (other features borrowed from a real transaction):
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <input id="custom-time" type="number" placeholder="Time (seconds)"
+      style="background:var(--panel-raised); border:1px solid var(--border); color:var(--text-primary); border-radius:6px; padding:8px 10px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; width:140px;">
+    <input id="custom-amount" type="number" placeholder="Amount ($)"
+      style="background:var(--panel-raised); border:1px solid var(--border); color:var(--text-primary); border-radius:6px; padding:8px 10px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; width:140px;">
+    <button id="btn-test-custom"
+      style="background:rgba(76,134,255,0.12); color:var(--line); border:1px solid var(--line); border-radius:8px; padding:10px 18px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; cursor:pointer;">
+      Predict
+    </button>
+  </div>
+</div>
 <div class="grid">
   <div class="col">
     <div class="panel pulse-panel">
