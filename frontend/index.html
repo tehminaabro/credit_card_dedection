@@ -613,7 +613,53 @@ async function testManualCase(isFraudCase){
 
 document.getElementById('btn-test-fraud').addEventListener('click', () => testManualCase(true));
 document.getElementById('btn-test-normal').addEventListener('click', () => testManualCase(false));
+async function testCustomCase(){
+  const resDiv = document.getElementById('manual-result');
+  const timeVal = document.getElementById('custom-time').value;
+  const amountVal = document.getElementById('custom-amount').value;
 
+  if (amountVal === '' || isNaN(amountVal) || Number(amountVal) < 0){
+    resDiv.style.display = 'block';
+    resDiv.style.color = 'var(--fraud)';
+    resDiv.textContent = '⚠ Please enter a valid, non-negative Amount.';
+    return;
+  }
+
+  resDiv.style.display = 'block';
+  resDiv.style.color = 'var(--text-secondary)';
+  resDiv.textContent = 'Running your custom transaction through the model…';
+
+  try {
+    const sampleRes = await fetch(`${BACKEND_HTTP_URL}/sample_transaction?fraud=false`);
+    if (!sampleRes.ok) throw new Error('sample fetch failed');
+    const features = await sampleRes.json();
+
+    features.Amount = Number(amountVal);
+    if (timeVal !== '') features.Time = Number(timeVal);
+
+    const predRes = await fetch(`${BACKEND_HTTP_URL}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(features)
+    });
+    if (!predRes.ok) throw new Error('predict failed');
+    const result = await predRes.json();
+
+    const amount = '$' + Number(features.Amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    resDiv.style.color = 'var(--text-primary)';
+    resDiv.innerHTML = `
+      Your Time: <b>${features.Time}</b> &nbsp;|&nbsp; Your Amount: <b>${amount}</b><br>
+      <span style="color:var(--text-dim); font-size:11px;">(V1–V28 borrowed from a real transaction — those are anonymized values with no human-readable meaning)</span><br>
+      Model's risk score: <b>${(result.risk * 100).toFixed(2)}%</b><br>
+      Model's prediction: <span class="badge ${result.isFraud ? 'fraud' : 'safe'}">${result.isFraud ? 'FRAUD' : 'NORMAL'}</span>
+    `;
+  } catch (e) {
+    resDiv.style.color = 'var(--fraud)';
+    resDiv.textContent = '⚠ Could not reach the backend. Wait a moment and try again.';
+  }
+}
+
+document.getElementById('btn-test-custom').addEventListener('click', testCustomCase);
 // ----- Connect to the real FastAPI backend, when available -----
 function connectToBackend(){
   try {
