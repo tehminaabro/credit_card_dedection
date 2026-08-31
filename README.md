@@ -9,7 +9,7 @@ system would work.
 
 🔗 **Live Demo:** https://securetrans-fraud-detection-system.onrender.com
 🔗 **Backend API docs:** https://credit-card-dedection.onrender.com/docs
-
+    Project Demo Video: [https://drive.google.com/file/d/1MUAd1DmzMIGEwKKwIAVImbC0UbMm0NRP/view?usp=sharing]
 ---
 
 ## 1. What this project does
